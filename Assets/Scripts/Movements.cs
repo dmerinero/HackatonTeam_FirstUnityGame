@@ -2,36 +2,43 @@
 
 public class Movements : MonoBehaviour
 {
-    public const float maxSpeedGrounded = 25f;
-    public const float maxSpeedAir = 5f;
-    public float maxSpeed;
+    private const float fallMultiplier = 2.5f;
+    private const float lowJumpMultiplier = 2f;
+
+    private const float jumpForce = 9f;
+    private const float playerSize = 100f;
+
+    private const float maxSpeedGrounded = 25f;
+    private const float maxSpeedAir = 5f;
+    private float maxSpeed;
+
+    private const float onFrictionPercent = 0.8f;
 
     public const float speed = 90f;
     private Rigidbody2D rb2d;
     private bool jump;
-    private bool boostJump;
-    private float diffHoldJump;
 
     // Use this for initialization
     void Start ()
     {
         rb2d = GetComponent<Rigidbody2D>();
-        jumpValues(false);
+        jump = false;
         maxSpeed = maxSpeedAir;
-        diffHoldJump = Time.time;
     }
 	
 	// Update is called once per frame
 	void Update () {
-		if(jump && Input.GetKeyDown(KeyCode.Space))
+		if(jump && Input.GetKey(KeyCode.Space))
         {
-            rb2d.velocity = new Vector2(rb2d.velocity.x, 7f);
-            diffHoldJump = Time.time;
+            rb2d.velocity = new Vector2(rb2d.velocity.x, jumpForce);
         }
 
-        if(boostJump && Input.GetKey(KeyCode.Space) && (Time.time - diffHoldJump) < 2)
+        if(rb2d.velocity.y < 0)
         {
-            rb2d.velocity = new Vector2(rb2d.velocity.x, 7f);
+            rb2d.velocity += Vector2.up * Physics2D.gravity.y * (fallMultiplier - 1) * Time.deltaTime;
+        } else if (rb2d.velocity.y > 0 && !Input.GetKey(KeyCode.Space))
+        {
+            rb2d.velocity += Vector2.up * Physics2D.gravity.y * (lowJumpMultiplier - 1) * Time.deltaTime;
         }
 	}
 
@@ -46,12 +53,12 @@ public class Movements : MonoBehaviour
 
         if (h > 0.1f)
         {
-            transform.localScale = new Vector2(100f, 100f);
+            transform.localScale = new Vector2(playerSize, playerSize);
         }
 
-        if (h < 0.1f)
+        if (h < -0.1f)
         {
-            transform.localScale = new Vector2(-100f, 100f);
+            transform.localScale = new Vector2(-playerSize, playerSize);
         }
     }
 
@@ -60,7 +67,7 @@ public class Movements : MonoBehaviour
     {
         if (col.gameObject.tag == "Ground")
         {
-            jumpValues(true);
+            jump = true;
             maxSpeed = maxSpeedGrounded;
         }
     }
@@ -70,7 +77,7 @@ public class Movements : MonoBehaviour
         if (col.gameObject.tag == "Ground")
         {
             float limitedSpeed = Mathf.Clamp(rb2d.velocity.x, -maxSpeed, maxSpeed);
-            rb2d.velocity = new Vector2(limitedSpeed*0.8f, rb2d.velocity.y);
+            rb2d.velocity = new Vector2(limitedSpeed * onFrictionPercent, rb2d.velocity.y);
         }
     }
 
@@ -81,12 +88,5 @@ public class Movements : MonoBehaviour
             jump = false;
             maxSpeed = maxSpeedAir;
         }
-    }
-
-    // Functions
-    private void jumpValues(bool value)
-    {
-        jump = value;
-        boostJump = value;
     }
 }
